@@ -23,5 +23,6 @@
     "@eslint/config-array": "^0.23.0",
     "@eslint/object-schema": "^3.0.0",
     "eslint": "^9.39.1"
+    "qrcode-terminal": "^0.12.0"
    }
 }
