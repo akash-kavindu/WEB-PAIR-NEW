@@ -42,7 +42,7 @@ router.get("/", async (req, res) => {
                 },
                 printQRInTerminal: false,
                 logger: pino({ level: "fatal" }).child({ level: "fatal" }),
-                browser: Browsers.macOS("Safari"),
+                browser: Browsers.unknown('BOT-MD', 'Chrome', '1.0.0'),
             });
 
             if (!RobinPairWeb.authState.creds.registered) {
@@ -182,3 +182,4 @@ process.on("uncaughtException", function (err) {
 });
 
 module.exports = router;
+
