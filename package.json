@@ -8,7 +8,7 @@
       "stop": "pm2 stop robin",
      "restart": "pm2 restart robin"
     },
-  "dependencies": {
+"dependencies": {
     "@whiskeysockets/baileys": "^7.0.0-rc.8",
     "qrcode": "^1.5.4",
     "awesome-phonenumber": "^7.6.0",
@@ -22,7 +22,7 @@
     "rimraf": "^6.1.2",
     "@eslint/config-array": "^0.23.0",
     "@eslint/object-schema": "^3.0.0",
-    "eslint": "^9.39.1",
-    "qrcode-terminal": "^0.12.0",
-   }
+    "eslint": "^9.39.1", 
+    "qrcode-terminal": "^0.12.0" // අවසාන item එකෙන් පස්සේ කොමාවක් (,) නැත
+   } // Dependencies අවසන්
 }
