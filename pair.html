@@ -1,218 +1,227 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ROBIN WA PAIR</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-  <style>
-    body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #141414; /* Dark background */
-      background-repeat: no-repeat;
-      background-position: center;
-      background-size: cover;
-      font-family: 'Arial', sans-serif;
-      color: #fff;
-    }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAIR CODE</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #141414;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: cover;
+      font-family: 'Arial', sans-serif;
+      color: #fff; /* Set the text color to white */
+    }
 
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
-    .box {
-      width: 300px;
-      height: 250px; /* Pairing Code සඳහා උස සකසා ඇත */
-      padding: 20px;
-      position: relative;
-      text-align: center;
-      background-color: #a20000;
-      border-radius: 10px;
-      transform: perspective(1000px) rotateY(0deg);
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
-      position: relative;
-      transition: height 0.3s ease;
-    }
+    .box {
+      width: 300px;
+      height: 330px;
+      padding: 20px;
+      position: relative;
+      text-align: center;
+      background-color: #a20000; /* Update background color */
+      border-radius: 10px;
+      transform: perspective(1000px) rotateY(0deg);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+      position: relative;
+    }
 
-    /* Input and button styles */
-    #text { color: #ffffff; }
-    .input-container input { color: #ffffff; }
-    .centered-text { color: #ffffff; }
-    
-    .input-container {
-      display: flex;
-      background: #ffffff;
-      border-radius: 1rem;
-      padding: 0.3rem;
-      gap: 0.3rem;
-      max-width: 300px;
-      width: 100%;
-      margin-top: 10px;
-    }
+    #text {
+      color: #ffffff; /* Set the text color to black (#000) */
+    }
 
-    .input-container input {
-      border-radius: 0.8rem 0 0 0.8rem;
-      background: #000000;
-      width: 89%;
-      flex-basis: 75%;
-      padding: 1rem;
-      border: none;
-      border-left: 2px solid #075e54;
-      color: #ecf0f1;
-      transition: all 0.2s ease-in-out;
-    }
+    .input-container input {
+      color: #ffffff; /* Set the text color to black (#000) */
+    }
 
-    .input-container input:focus {
-      border-left: 2px solid #075e54;
-      outline: none;
-      box-shadow: inset 13px 13px 10px #075e54, inset -13px -13px 10px #2c3e50;
-    }
+    .centered-text {
+      color: #ffffff; /* Set the text color to black (#000) */
+    }
 
-    .input-container button {
-      flex-basis: 25%;
-      padding: 1rem;
-      background: #25d366;
-      font-weight: 900;
-      letter-spacing: 0.3rem;
-      text-transform: uppercase;
-      color: white;
-      border: none;
-      width: 100%;
-      border-radius: 0 1rem 1rem 0;
-      transition: all 0.2s ease-in-out;
-    }
+    .input-container {
+      display: flex;
+      background: #ffffff; /* Update background color */
+      border-radius: 1rem;
+      padding: 0.3rem;
+      gap: 0.3rem;
+      max-width: 300px;
+      width: 100%;
+    }
 
-    .input-container button:hover {
-      background: #2980b9;
-    }
+    .input-container input {
+      border-radius: 0.8rem 0 0 0.8rem;
+      background: #000000; /* Update background color */
+      width: 89%;
+      flex-basis: 75%;
+      padding: 1rem;
+      border: none;
+      border-left: 2px solid #075e54; /* Update border color */
+      color: #ecf0f1; /* Set text color to light grey */
+      transition: all 0.2s ease-in-out;
+    }
 
-    #waiting-message {
-      color: #ffffff;
-      margin-top: 10px;
-    }
+    .input-container input:focus {
+      border-left: 2px solid #075e54;
+      outline: none;
+      box-shadow: inset 13px 13px 10px #075e54, inset -13px -13px 10px #2c3e50;
+    }
 
-    @media (max-width: 500px) {
-      .input-container {
-        flex-direction: column;
-      }
+    .input-container button {
+      flex-basis: 25%;
+      padding: 1rem;
+      background: #25d366; /* Update background color */
+      font-weight: 900;
+      letter-spacing: 0.3rem;
+      text-transform: uppercase;
+      color: white;
+      border: none;
+      width: 100%;
+      border-radius: 0 1rem 1rem 0;
+      transition: all 0.2s ease-in-out;
+    }
 
-      .input-container input {
-        border-radius: 0.8rem;
-      }
+    .input-container button:hover {
+      background: #2980b9; /* Update background color on hover */
+    }
 
-      .input-container button {
-        padding: 1rem;
-        border-radius: 0.8rem;
-      }
-    }
+    #waiting-message {
+      color: #ffffff; /* Set text color to light grey */
+      margin-top: 10px;
+    }
 
-    .centered-text {
-      text-align: center;
-    }
+    @media (max-width: 500px) {
+      .input-container {
+        flex-direction: column;
+      }
 
-    /* Add styles for the loading spinner */
-    #loading-spinner {
-      display: none;
-      color: white;
-      margin-top: 10px;
-    }
+      .input-container input {
+        border-radius: 0.8rem;
+      }
 
-    .fa-spinner {
-      animation: spin 2s linear infinite;
-    }
+      .input-container button {
+        padding: 1rem;
+        border-radius: 0.8rem;
+      }
+    }
 
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+    .centered-text {
+      text-align: center;
+    }
+
+    /* Add styles for the loading spinner */
+    #loading-spinner {
+      display: none;
+      color: white;
+      margin-top: 10px;
+    }
+
+    .fa-spinner {
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="main">
-      <div class="box" id="box">
-        <div id="text">
-          <i class="fa fa-user"></i>
-          <p>
-            <h3 class="centered-text">Link Robin with phone number</h3>
-            <br>
-            <h6 id="instruction-text">🔢 Enter your number with country code. ROBIN WEB PAIR</h6>
-            <div class="input-container" id="input-container">
-              <input placeholder="+94704xxxxxx" type="number" id="number" name="">
-              <button id="submit">Submit ROBIN</button>
-            </div>
-                        <div id="loading-spinner">
-              <i class="fas fa-spinner fa-spin"></i>
-            </div>
-            <br>
-            <br>
-            <main id="pair"></main>
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-  
-  <script
-  src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.0.0-alpha.1/axios.min.js"
-  ></script>
-  <script>
-    
-    let a = document.getElementById("pair");
-    let b = document.getElementById("submit");
-    let c = document.getElementById("number");
+  <div class="container">
+    <div class="main">
+      <div class="box" id="box">
+        <div id="text">
+          <i class="fa fa-user"></i>
+          <p>
+            <h3 class="centered-text">Link Robin with phone number</h3>
+            <br>
+            <h6>🔢 Enter your number with country code. ROBIN WEB PAIR</h6>
+            <div class="input-container">
+              <input placeholder="+94704xxxxxx" type="number" id="number" placeholder="❗ Enter your phone number with country code, ROBIN WEB PAIR" name="">
+              <button id="submit">Submit ROBIN</button>
+            </div>
+            <!-- Add the loading spinner -->
+            <div id="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <br>
+            <br>
+            <main id="pair"></main>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script
+  src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.0.0-alpha.1/axios.min.js"
+  ></script>
+  <script>
+    
+    let a = document.getElementById("pair");
+    let b = document.getElementById("submit");
+    let c = document.getElementById("number");
     let box = document.getElementById("box");
-    let inputContainer = document.getElementById("input-container");
-    let instructionText = document.getElementById("instruction-text");
 
+    async function Copy() {
+      let text = document.getElementById("copy").innerText;
+      let obj = document.getElementById("copy");
+      await navigator.clipboard.writeText(obj.innerText.replace('CODE: ', ''));
+      obj.innerText = "✔️ COPIED";
+      obj.style = "color:blue;font-weight:bold";
+      obj.size = "5";
+      setTimeout(() => {
+        obj.innerText = text;
+        obj.style = "color:white;font-weight-bold";
+        obj.size = "5";
+      }, 500);
+    }
 
-    b.addEventListener("click", async (e) => {
-      e.preventDefault();
-      a.innerHTML = ''; // Clear previous messages
-      
-      if (!c.value) {
-        a.innerHTML = '<a style="color:yellow;font-weight:bold">❗Enter your whatsapp number with country code.</a><br><br>';
-      } else if (c.value.replace(/[^0-9]/g, "").length < 11) {
-        a.innerHTML = '<a style="color:yellow;font-weight:bold">❗Invalid number format. Please try again.</a><br><br>';
-      } else {
-        // Show the loading spinner and waiting message
-        document.getElementById("loading-spinner").style.display = "block";
-        a.innerHTML = '<a style="color:#25d366;font-weight:bold">Connecting... Requesting Pairing Code.</a>';
-
-        const bc = c.value.replace(/[^0-9]/g, "");
-
-        // Hide input field and button
-        inputContainer.style.display = 'none';
-
-        // Request the pairing process start
-        let { data } = await axios(`/code?number=${bc}`);
-        
-        // Hide the loading spinner
-        document.getElementById("loading-spinner").style.display = "none";
-
-        if (data.code === "Session Exists") {
-            instructionText.innerHTML = '';
-            box.style.height = '150px';
-            a.innerHTML = '<font style="color:yellow;font-weight:bold" size="5">✅ SESSION ALREADY EXISTS.</font><br><font style="color:white;font-weight:bold" size="3">Delete the /session folder and restart the server to re-pair.</font>';
-        } else if (data.code && data.code.length === 6) { // Pairing Code ලැබුණා නම් 👈
-            instructionText.innerHTML = '';
-            // Box එකේ උස Pairing Code එකට සකස් කිරීම
-            box.style.height = '250px'; 
-
-            a.innerHTML = `<font style="color:white;font-weight:bold" size="3">1. Open WhatsApp (Settings -> Linked Devices -> Link a device).</font><br><font style="color:white;font-weight:bold" size="3">2. Tap 'Link with phone number'.</font><br><br><font style="color:red;font-weight:bold" size="5">🚨 YOUR PAIRING CODE 🚨</font><br><font style="color:yellow;font-weight:bold" size="7">${data.code}</font><br><br><font style="color:white;font-weight:bold" size="3">Enter this code immediately on your WhatsApp app.</font>`;
-
-        } else {
-            inputContainer.style.display = 'flex';
-            a.innerHTML = '<font style="color:red;font-weight:bold" size="5">❗ FAILED TO START PAIRING.</font><br><font style="color:white;font-weight:bold" size="3">Check terminal logs for errors or try again.</font>';
-        }
-      }
-    });
-  </script>
+    b.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!c.value) {
+        a.innerHTML = '<a style="color:black;font-weight:bold">❗Enter your whatsapp number with country code.</a><br><br>';
+      } else if (c.value.replace(/[^0-9]/g, "").length < 11) {
+        a.innerHTML = '<a style="color:black;font-weight:bold">❗Invalid number format. Please try again.</a><br><br>';
+      } else {
+        const bc = c.value.replace(/[^0-9]/g, "");
+        let bb = "";
+        let bbc = "";
+        const cc = bc.split('');
+        cc.map(a => {
+          bbc += a;
+          if (bbc.length == 3) {
+            bb += " " + a;
+          } else if (bbc.length == 8) {
+            bb += " " + a;
+          } else {
+            bb += a;
+          }
+        });
+        c.type = "text";
+        c.value = "+" + bb;
+        c.style = "color:white;font-size:20px";
+        // Show the loading spinner
+        document.getElementById("loading-spinner").style.display = "block";
+        a.innerHTML = ''; // Clear the previous content
+        let { data } = await axios(`/code?number=${bc}`);
+        let code = data.code || "❗ Service Unavailable";
+        a.innerHTML = '<font id="copy" onclick="Copy()" style="color:blue;font-weight:bold" size="5">CODE: <span style="color:black;font-weight:bold">' + code + '</span></font><br><br><br>';
+        // Hide the loading spinner when the process is complete
+        document.getElementById("loading-spinner").style.display = "none";
+      }
+    });
+  </script>
 </body>
 </html>
