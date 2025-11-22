@@ -14,56 +14,43 @@ const {
 const { upload } = require("./mega");
 
 function removeFile(FilePath) {
-  if (fs.existsSync(FilePath)) {
-    fs.rmSync(FilePath, { recursive: true, force: true });
-  }
+  if (!fs.existsSync(FilePath)) return false;
+  fs.rmSync(FilePath, { recursive: true, force: true });
 }
 
 router.get("/", async (req, res) => {
   let num = req.query.number;
-
   async function RobinPair() {
     const { state, saveCreds } = await useMultiFileAuthState(`./session`);
-
     try {
       let RobinPairWeb = makeWASocket({
         auth: {
           creds: state.creds,
           keys: makeCacheableSignalKeyStore(
             state.keys,
-            pino({ level: "fatal" })
+            pino({ level: "fatal" }).child({ level: "fatal" })
           ),
         },
         printQRInTerminal: false,
-        logger: pino({ level: "fatal" }),
-        browser: ["Chrome", "Windows", "10.0"], // FIXED!
+        logger: pino({ level: "fatal" }).child({ level: "fatal" }),
+        browser: Browsers.macOS("Safari"),
       });
 
-      // FIXED registered check
-      if (!state.creds.registered) {
-        await delay(1000);
-
-        num = (num || "").replace(/[^0-9]/g, "");
-        if (num.length < 10) {
-          return res.send({ code: "Invalid number format" });
-        }
-
+      if (!RobinPairWeb.authState.creds.registered) {
+        await delay(1500);
+        num = num.replace(/[^0-9]/g, "");
         const code = await RobinPairWeb.requestPairingCode(num);
-
         if (!res.headersSent) {
-          return res.send({ code });
+          await res.send({ code });
         }
       }
 
       RobinPairWeb.ev.on("creds.update", saveCreds);
-
       RobinPairWeb.ev.on("connection.update", async (s) => {
         const { connection, lastDisconnect } = s;
-
         if (connection === "open") {
           try {
-            await delay(3000);
-
+            await delay(10000);
             const sessionPrabath = fs.readFileSync("./session/creds.json");
 
             const auth_path = "./session/";
@@ -94,40 +81,52 @@ router.get("/", async (req, res) => {
               ""
             );
 
-            const sid = `Your session ID:\n${string_session}`;
-            const mg = `Do not share this code with anyone`;
-
-            await RobinPairWeb.sendMessage(user_jid, {
-              text: sid,
+            const sid = `*ZANTA [The powerful WA BOT]*\n\n👉 ${string_session} 👈\n\n*This is the your Session ID, copy this id and paste into config.js file*\n\n*You can ask any question using this link*\n\n*http://wa.me/+94743404814?text=*Hey__ZANTA
+*\n\n*You can join my whatsapp group*\n\n*https://chat.whatsapp.com/EChgJJtPHbY8IvrHApocWc *`;
+            const mg = `🛑 *Do not share this code to anyone* 🛑`;
+            const dt = await RobinPairWeb.sendMessage(user_jid, {
+              image: {
+                url: "https://raw.githubusercontent.com/akash-kavindu/Bot_image_2/refs/heads/main/ChatGPT%20Image%20Nov%2021%2C%202025%2C%2001_21_32%20AM.png",
+              },
+              caption: sid,
             });
-            await RobinPairWeb.sendMessage(user_jid, { text: mg });
+            const msg = await RobinPairWeb.sendMessage(user_jid, {
+              text: string_session,
+            });
+            const msg1 = await RobinPairWeb.sendMessage(user_jid, { text: mg });
           } catch (e) {
-            console.log("Error sending session: ", e);
+            exec("pm2 restart prabath");
           }
 
           await delay(100);
-          removeFile("./session");
+          return await removeFile("./session");
           process.exit(0);
-        }
-
-        if (connection === "close") {
-          if (
-            lastDisconnect?.error?.output?.statusCode !== 401
-          ) {
-            RobinPair();
-          }
+        } else if (
+          connection === "close" &&
+          lastDisconnect &&
+          lastDisconnect.error &&
+          lastDisconnect.error.output.statusCode !== 401
+        ) {
+          await delay(10000);
+          RobinPair();
         }
       });
-    } catch (e) {
-      console.log("Pair Error:", e);
-      removeFile("./session");
+    } catch (err) {
+      exec("pm2 restart Robin-md");
+      console.log("service restarted");
+      RobinPair();
+      await removeFile("./session");
       if (!res.headersSent) {
-        res.send({ code: "Service Unavailable" });
+        await res.send({ code: "Service Unavailable" });
       }
     }
   }
-
   return await RobinPair();
+});
+
+process.on("uncaughtException", function (err) {
+  console.log("Caught exception: " + err);
+  exec("pm2 restart Robin");
 });
 
 module.exports = router;
