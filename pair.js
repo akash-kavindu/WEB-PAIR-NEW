@@ -3,15 +3,16 @@ const fs = require("fs");
 const { exec } = require("child_process");
 let router = express.Router();
 const pino = require("pino");
+const qrcode = require('qrcode-terminal'); // QR Code Terminal library 👈
 const {
     default: makeWASocket,
     useMultiFileAuthState,
     delay,
     makeCacheableSignalKeyStore,
-    Browsers,
     jidNormalizedUser,
+    DisconnectReason, // Disconnect reasons සඳහා
 } = require("@whiskeysockets/baileys");
-const { upload } = require("./mega");
+const { upload } = require("./mega"); // mega.js එකේ upload function එක
 
 function removeFile(FilePath) {
     if (!fs.existsSync(FilePath)) return false;
@@ -19,18 +20,25 @@ function removeFile(FilePath) {
 }
 
 router.get("/", async (req, res) => {
-    let num = req.query.number;
-    
-    // Check if a session already exists. If so, don't run pair function.
+    // Session එක දැනටමත් තිබේදැයි පරීක්ෂා කිරීම
     if (fs.existsSync("./session/creds.json")) {
         console.log("Session already exists. Please delete ./session folder to re-pair.");
-        return res.send({ message: "Session already exists. Delete /session folder and restart the server to re-pair." });
+        // HTML එකට දන්වන්න
+        if (!res.headersSent) {
+            return res.send({ code: "Session Exists" });
+        }
     }
 
+    // Pair කිරීමේ ක්‍රියාවලිය ආරම්භ වන බව HTML එකට දන්වන්න
+    // HTML එකට Response යැවීම වැදගත්, නැතිනම් Timeout වේ.
+    if (!res.headersSent) {
+        res.send({ code: "QR_PENDING" });
+    }
+    
     async function RobinPair() {
-        // useMultiFileAuthState creates a new session folder if it doesn't exist
-        const { state, saveCreds } = await useMultiFileAuthState(`./session`); 
-        
+        // auth state සහ saveCreds function එක ලබා ගැනීම
+        const { state, saveCreds } = await useMultiFileAuthState(`./session`);
+
         try {
             let RobinPairWeb = makeWASocket({
                 auth: {
@@ -40,42 +48,42 @@ router.get("/", async (req, res) => {
                         pino({ level: "fatal" }).child({ level: "fatal" })
                     ),
                 },
-                printQRInTerminal: false,
+                // Terminal එකේ QR code එක print කිරීමට මෙය True කරන්න
+                printQRInTerminal: false, // අපි qrcode-terminal භාවිතා කරන නිසා මෙය False තැබිය හැකියි.
                 logger: pino({ level: "fatal" }).child({ level: "fatal" }),
                 browser: ['BOT-MD', 'Chrome', '1.0.0'],
             });
 
-            if (!RobinPairWeb.authState.creds.registered) {
-                await delay(1500);
-                num = num.replace(/[^0-9]/g, "");
-                
-                // IMPORTANT: requestPairingCode can sometimes throw an error if the connection is closed quickly.
-                const code = await RobinPairWeb.requestPairingCode(num);
-                
-                if (!res.headersSent) {
-                    await res.send({ code }); // Return the pair code to the user
-                }
-            }
-
             RobinPairWeb.ev.on("creds.update", saveCreds);
+
             RobinPairWeb.ev.on("connection.update", async (s) => {
-                const { connection, lastDisconnect } = s;
+                const { connection, lastDisconnect, qr } = s; 
                 
+                // --- QR CODE DISPLAY LOGIC ---
+                if (qr) {
+                    // qrcode-terminal භාවිතයෙන් console එකේ QR code එක print කිරීම
+                    qrcode.generate(qr, { small: true });
+                    console.log('\n=============================================');
+                    console.log('🚨 SCAN THE QR CODE ABOVE IN THIS TERMINAL 🚨');
+                    console.log('=============================================\n');
+                }
+                // --- END QR CODE DISPLAY LOGIC ---
+                
+
                 if (connection === "open") {
                     console.log("Connection opened successfully. Attempting to upload session ID.");
                     try {
-                        // Give time for final creds to be written
+                        // Creds ලිවීමට කාලය දෙන්න
                         await delay(5000); 
-                        
-                        // Check if creds.json actually exists before reading
+
                         if (!fs.existsSync("./session/creds.json")) {
-                             throw new Error("creds.json file not found after connection open.");
+                            throw new Error("creds.json file not found after connection open.");
                         }
 
+                        // --- MEGA UPLOAD LOGIC (ඔබේ පැරණි කේතය) ---
                         const auth_path = "./session/";
                         const user_jid = jidNormalizedUser(RobinPairWeb.user.id);
 
-                        // --- MEGA UPLOAD LOGIC ---
                         function randomMegaId(length = 6, numberLength = 4) {
                             const characters ="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
                             let result = "";
@@ -114,66 +122,53 @@ router.get("/", async (req, res) => {
                         await RobinPairWeb.sendMessage(user_jid, { text: string_session });
                         await RobinPairWeb.sendMessage(user_jid, { text: mg });
                         
-                        // Session is successfully sent. Do NOT delete the session files yet.
-                        // You need the files to remain in ./session for the Bot to send the message above.
-                        
-                        console.log("Session ID successfully sent. Restarting process...");
-                        // Use exec("pm2 restart ...") here to restart the main bot that uses this session.
-                        // For a simple Replit setup, we will exit and let Replit restart the script.
-                        
+                        console.log("Session ID successfully sent. Exiting pair server...");
                         await delay(2000);
                         return process.exit(0);
 
                     } catch (e) {
                         console.error("Error during session upload/message send:", e);
-                        // If upload fails, the session is likely still valid on disk.
-                        // We shouldn't restart the bot that uses this session yet, but we should exit this pair server.
-                        
-                        // Important: If a mega upload or message send fails, we still need to exit the pair server.
-                        await removeFile("./session"); // Delete the session to allow re-pairing
-                        exec("pm2 restart prabath"); // Restarting the main process is often needed.
+                        // අසාර්ථක වූවොත් session එක ඉවත් කර process එක restart කරන්න.
+                        await removeFile("./session"); 
+                        exec("pm2 restart prabath"); 
                         return process.exit(1);
                     }
 
-                } else if (
-                    connection === "close" &&
-                    lastDisconnect &&
-                    lastDisconnect.error &&
-                    // Check for EBLOCKED or NOT AUTHORIZED (401) errors specifically
-                    lastDisconnect.error.output.statusCode !== 401
-                ) {
-                    const shouldLogOut = lastDisconnect.error.message === "Unauthorized" || 
-                                         lastDisconnect.error.output.statusCode === 401 ||
-                                         lastDisconnect.error.message.includes("EBLOCKED");
-                                         
+                } else if (connection === "close") {
+                    const shouldLogOut = lastDisconnect?.error?.message === "Unauthorized" ||
+                                         lastDisconnect?.error?.output?.statusCode === DisconnectReason.loggedOut ||
+                                         lastDisconnect?.error?.message?.includes("EBLOCKED");
+
                     if(shouldLogOut) {
-                         console.log("Session closed due to UNATHORIZED or EBLOCKED. Removing session files and exiting.");
-                         // If EBLOCKED or Unauthorized, remove the corrupted session and exit.
+                         console.log("Session closed due to UNATHORIZED, LOGGED OUT, or EBLOCKED. Removing session files and exiting.");
                          await removeFile("./session");
-                         await delay(1000); 
+                         await delay(1000);
+                         // ඔබගේ ප්‍රධාන bot එක restart කරන්න
                          exec("pm2 restart Robin-md");
                          return process.exit(1);
                     }
-                    
-                    // For other non-critical disconnects, attempt to reconnect
-                    console.log("Connection closed, attempting to reconnect...");
-                    await delay(10000);
-                    RobinPair();
+
+                    // අනෙකුත් disconnect හේතු සඳහා නැවත සම්බන්ධ වීමට උත්සාහ කරන්න
+                    if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+                        console.log(`Connection closed (Reason: ${lastDisconnect.error.output.statusCode}), attempting to reconnect...`);
+                        await delay(10000);
+                        RobinPair(); // Reconnect
+                    } else {
+                        console.log('Logged out. Please delete ./session folder and restart if needed.');
+                    }
                 }
             });
         } catch (err) {
             console.error("Critical error in RobinPair:", err);
-            // If an error happens before connection.update event fires (e.g., pairing code request fails)
+            // දෝෂයක් ඇති වුවහොත්, session එක ඉවත් කර restart කරන්න.
             exec("pm2 restart Robin-md");
-            console.log("service restarted");
-            // RobinPair(); // Do not recursively call on main error
             await removeFile("./session");
-            if (!res.headersSent) {
-                await res.send({ code: "Service Unavailable" });
-            }
+            return process.exit(1);
         }
     }
-    return await RobinPair();
+    
+    // Pairing ක්‍රියාවලිය ආරම්භ කිරීම
+    await RobinPair();
 });
 
 process.on("uncaughtException", function (err) {
@@ -182,5 +177,3 @@ process.on("uncaughtException", function (err) {
 });
 
 module.exports = router;
-
-
