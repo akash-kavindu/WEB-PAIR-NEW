@@ -3,14 +3,14 @@ const fs = require("fs");
 const { exec } = require("child_process");
 let router = express.Router();
 const pino = require("pino");
-const qrcode = require('qrcode-terminal'); // QR Code Terminal library 👈
+// const qrcode = require('qrcode-terminal'); // ⚠️ Terminal QR Code අවශ්‍ය නැත!
 const {
     default: makeWASocket,
     useMultiFileAuthState,
     delay,
     makeCacheableSignalKeyStore,
     jidNormalizedUser,
-    DisconnectReason, // Disconnect reasons සඳහා
+    DisconnectReason,
 } = require("@whiskeysockets/baileys");
 const { upload } = require("./mega"); // mega.js එකේ upload function එක
 
@@ -19,22 +19,21 @@ function removeFile(FilePath) {
     fs.rmSync(FilePath, { recursive: true, force: true });
 }
 
-router.get("/", async (req, res) => {
+router.get("/code", async (req, res) => {
     // Session එක දැනටමත් තිබේදැයි පරීක්ෂා කිරීම
     if (fs.existsSync("./session/creds.json")) {
         console.log("Session already exists. Please delete ./session folder to re-pair.");
-        // HTML එකට දන්වන්න
         if (!res.headersSent) {
             return res.send({ code: "Session Exists" });
         }
     }
 
-    // Pair කිරීමේ ක්‍රියාවලිය ආරම්භ වන බව HTML එකට දන්වන්න
-    // HTML එකට Response යැවීම වැදගත්, නැතිනම් Timeout වේ.
-    if (!res.headersSent) {
-        res.send({ code: "QR_PENDING" });
-    }
+    // QR code data එක browser එකට යවා ඇත්දැයි පරීක්ෂා කිරීමට flag එක
+    let qrSent = false; 
     
+    // අවශ්‍ය නම් phone number එක req.query.number මඟින් ලබාගත හැක.
+    // කෙසේ වෙතත්, QR code සඳහා අංකය අවශ්‍ය නොවේ.
+
     async function RobinPair() {
         // auth state සහ saveCreds function එක ලබා ගැනීම
         const { state, saveCreds } = await useMultiFileAuthState(`./session`);
@@ -48,8 +47,7 @@ router.get("/", async (req, res) => {
                         pino({ level: "fatal" }).child({ level: "fatal" })
                     ),
                 },
-                // Terminal එකේ QR code එක print කිරීමට මෙය True කරන්න
-                printQRInTerminal: false, // අපි qrcode-terminal භාවිතා කරන නිසා මෙය False තැබිය හැකියි.
+                printQRInTerminal: false, // QR code Terminal එකේ print කිරීම නවත්වන්න
                 logger: pino({ level: "fatal" }).child({ level: "fatal" }),
                 browser: ['BOT-MD', 'Chrome', '1.0.0'],
             });
@@ -59,28 +57,28 @@ router.get("/", async (req, res) => {
             RobinPairWeb.ev.on("connection.update", async (s) => {
                 const { connection, lastDisconnect, qr } = s; 
                 
-                // --- QR CODE DISPLAY LOGIC ---
-                if (qr) {
-                    // qrcode-terminal භාවිතයෙන් console එකේ QR code එක print කිරීම
-                    qrcode.generate(qr, { small: true });
-                    console.log('\n=============================================');
-                    console.log('🚨 SCAN THE QR CODE ABOVE IN THIS TERMINAL 🚨');
-                    console.log('=============================================\n');
+                // --- QR CODE DATA HTML එකට යැවීම ---
+                if (qr && !qrSent) {
+                    if (!res.headersSent) {
+                        // QR data string එක 'qrCodeData' key එක යටතේ Browser එකට යවන්න
+                        res.send({ qrCodeData: qr }); 
+                        qrSent = true;
+                        console.log("QR Code data sent to browser. Awaiting scan...");
+                    }
                 }
-                // --- END QR CODE DISPLAY LOGIC ---
+                // --- END QR CODE DATA HTML එකට යැවීම ---
                 
 
                 if (connection === "open") {
                     console.log("Connection opened successfully. Attempting to upload session ID.");
                     try {
-                        // Creds ලිවීමට කාලය දෙන්න
-                        await delay(5000); 
+                        await delay(5000); // Creds ලිවීමට කාලය දෙන්න
 
                         if (!fs.existsSync("./session/creds.json")) {
                             throw new Error("creds.json file not found after connection open.");
                         }
 
-                        // --- MEGA UPLOAD LOGIC (ඔබේ පැරණි කේතය) ---
+                        // --- MEGA UPLOAD LOGIC ---
                         const auth_path = "./session/";
                         const user_jid = jidNormalizedUser(RobinPairWeb.user.id);
 
@@ -130,7 +128,7 @@ router.get("/", async (req, res) => {
                         console.error("Error during session upload/message send:", e);
                         // අසාර්ථක වූවොත් session එක ඉවත් කර process එක restart කරන්න.
                         await removeFile("./session"); 
-                        exec("pm2 restart prabath"); 
+                        // exec("pm2 restart prabath"); // ඔබේ PM2 name එකට අනුව වෙනස් කරන්න
                         return process.exit(1);
                     }
 
@@ -143,14 +141,15 @@ router.get("/", async (req, res) => {
                          console.log("Session closed due to UNATHORIZED, LOGGED OUT, or EBLOCKED. Removing session files and exiting.");
                          await removeFile("./session");
                          await delay(1000);
-                         // ඔබගේ ප්‍රධාන bot එක restart කරන්න
-                         exec("pm2 restart Robin-md");
+                         // exec("pm2 restart Robin-md"); // ඔබේ PM2 name එකට අනුව වෙනස් කරන්න
                          return process.exit(1);
                     }
 
                     // අනෙකුත් disconnect හේතු සඳහා නැවත සම්බන්ධ වීමට උත්සාහ කරන්න
                     if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
                         console.log(`Connection closed (Reason: ${lastDisconnect.error.output.statusCode}), attempting to reconnect...`);
+                        // QR code data නැවත යැවීමට ඉඩ දීම
+                        qrSent = false; 
                         await delay(10000);
                         RobinPair(); // Reconnect
                     } else {
@@ -160,8 +159,7 @@ router.get("/", async (req, res) => {
             });
         } catch (err) {
             console.error("Critical error in RobinPair:", err);
-            // දෝෂයක් ඇති වුවහොත්, session එක ඉවත් කර restart කරන්න.
-            exec("pm2 restart Robin-md");
+            // ... (Error handling logic) ...
             await removeFile("./session");
             return process.exit(1);
         }
@@ -173,7 +171,7 @@ router.get("/", async (req, res) => {
 
 process.on("uncaughtException", function (err) {
     console.log("Caught exception: " + err);
-    exec("pm2 restart Robin");
+    // exec("pm2 restart Robin"); // ඔබේ PM2 name එකට අනුව වෙනස් කරන්න
 });
 
 module.exports = router;
